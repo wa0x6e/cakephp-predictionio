@@ -1,0 +1,136 @@
+language: php
+
+php:
+  - 5.3
+  - 5.4
+  - 5.5
+
+env:
+  global:
+    - REPO_NAME=PredictionIO
+  matrix:
+    - CAKE_VERSION=2.2.0 DB=mysql
+    - CAKE_VERSION=2.3.0 DB=mysql
+    - CAKE_VERSION=2.4.0 DB=mysql
+    - CAKE_VERSION=2.5 DB=mysql
+    - CAKE_VERSION=master DB=mysql
+
+matrix:
+  include:
+    - php: 5.4
+      env:
+        - CAKE_VERSION=master DB=mysql COVERALLS=1
+    - php: 5.4
+      env:
+        - CAKE_VERSION=master DB=mysql PHPCS=1
+
+before_script:
+  - git clone git://github.com/cakephp/cakephp ../cakephp && cd ../cakephp && git checkout $CAKE_VERSION
+  - cp -R ../cakephp-predictionio app/Plugin/$REPO_NAME
+  - chmod -R 777 ../cakephp/app/tmp
+  - set +H
+  - echo "
+
+    CakePlugin::loadAll(array('$REPO_NAME' => array('bootstrap' => true)));" >> ../cakephp/app/Config/bootstrap.php
+  - echo "<?php
+    class DATABASE_CONFIG {
+    private \$identities = array(
+      'mysql' => array(
+        'datasource' => 'Database/Mysql',
+        'host' => '0.0.0.0',
+        'login' => 'travis'
+      ),
+      'pgsql' => array(
+        'datasource' => 'Database/Postgres',
+        'host' => '127.0.0.1',
+        'login' => 'postgres',
+        'database' => 'cakephp_test',
+        'schema' => array(
+          'default' => 'public',
+          'test' => 'public',
+          'test2' => 'test2',
+          'test_database_three' => 'test3'
+        )
+      ),
+      'sqlite' => array(
+        'datasource' => 'Database/Sqlite',
+        'database' => array(
+          'default' => ':memory:',
+          'test' => ':memory:',
+          'test2' => '/tmp/cakephp_test2.db',
+          'test_database_three' => '/tmp/cakephp_test3.db'
+        ),
+      )
+    );
+    public \$default = array(
+      'persistent' => false,
+      'host' => '',
+      'login' => '',
+      'password' => '',
+      'database' => 'cakephp_test',
+      'prefix' => ''
+    );
+    public \$test = array(
+      'persistent' => false,
+      'host' => '',
+      'login' => '',
+      'password' => '',
+      'database' => 'cakephp_test',
+      'prefix' => ''
+    );
+    public \$test2 = array(
+      'persistent' => false,
+      'host' => '',
+      'login' => '',
+      'password' => '',
+      'database' => 'cakephp_test2',
+      'prefix' => ''
+    );
+    public \$test_database_three = array(
+      'persistent' => false,
+      'host' => '',
+      'login' => '',
+      'password' => '',
+      'database' => 'cakephp_test3',
+      'prefix' => ''
+    );
+    public function __construct() {
+      \$db = 'mysql';
+      if (!empty(\$_SERVER['DB'])) {
+        \$db = \$_SERVER['DB'];
+      }
+      foreach (array('default', 'test', 'test2', 'test_database_three') as \$source) {
+        \$config = array_merge(\$this->{\$source}, \$this->identities[\$db]);
+        if (is_array(\$config['database'])) {
+          \$config['database'] = \$config['database'][\$source];
+        }
+        if (!empty(\$config['schema']) && is_array(\$config['schema'])) {
+          \$config['schema'] = \$config['schema'][\$source];
+        }
+        \$this->{\$source} = \$config;
+      }
+    }
+    }" > ../cakephp/app/Config/database.php
+  - cd app/Plugin/$REPO_NAME
+  - composer self-update
+  - composer install --prefer-source --dev --no-interaction
+  - pear channel-discover pear.bovigo.org
+  - pear install bovigo/vfsStream-beta
+  - sh -c "if [ '$COVERALLS' = '1' ]; then composer require --dev satooshi/php-coveralls:dev-master; fi"
+  - sh -c "if [ '$PHPCS' = '1' ]; then pear channel-discover pear.cakephp.org; fi"
+  - sh -c "if [ '$PHPCS' = '1' ]; then pear install --alldeps cakephp/CakePHP_CodeSniffer; fi"
+  - echo "# for php-coveralls
+    src_dir:./" > .coveralls.yml
+  - phpenv rehash
+  - cd ../../Console
+
+script:
+  - sh -c "if [ '$PHPCS' != '1' ]; then
+      mkdir -p build/logs;
+      ./cake test $REPO_NAME All$REPO_NAME --stderr --configuration ../Plugin/$REPO_NAME/Test/phpunit.xml;
+    else
+      phpcs -p --ignore='vendor/*,node_modules/*' --extensions=php --standard=CakePHP ../Plugin/$REPO_NAME;
+    fi"
+
+after_script:
+  - sh -c "if [ '$COVERALLS' = '1' ]; then php ../Plugin/$REPO_NAME/vendor/bin/coveralls -v; fi"
