@@ -76,7 +76,7 @@ before_script:
       'host' => '',
       'login' => '',
       'password' => '',
-      'database' => 'cakephp_test',
+      'database' => 'test',
       'prefix' => ''
     );
     public \$test2 = array(
