@@ -59,13 +59,19 @@ class PredictionableBehavior extends ModelBehavior {
  * @link http://docs.prediction.io/current/apis/user.html#add-a-user
  * @link http://docs.prediction.io/current/apis/item.html#add-an-item
  *
- * @return  bool  Always true
+ * @param  Model $model Model using this behavior
+ * @param  bool $created True if this save created a new record
+ * @param  array $options
+ *
+ * @return  bool  False if there's an error creating/updating the record on PredictionIO
  */
 	public function afterSave(Model $model, $created, $options = array()) {
 		if ($created || $this->_containsCustomFields($model)) {
 			$response = $this->client->execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildCreateCommand($model)));
+			if (!isset($response['message']) || strpos($response['message'], 'created') === false) {
+				return false;
+			}
 		}
-
 		return true;
 	}
 
@@ -74,9 +80,17 @@ class PredictionableBehavior extends ModelBehavior {
  *
  * @link http://docs.prediction.io/current/apis/user.html#delete-a-user-record
  * @link http://docs.prediction.io/current/apis/item.html#delete-an-item
+ *
+ * @param  Model $model Model using this behavior
+ *
+ * @return  bool  False if there's an error deleting the record from PredictionIO
  */
 	public function afterDelete(Model $model) {
 		$response = $this->client->execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildDeleteCommand($model)));
+		if (!isset($response['message']) || strpos($response['message'], 'deleted') === false) {
+			return false;
+		}
+		return true;
 	}
 
 /**
