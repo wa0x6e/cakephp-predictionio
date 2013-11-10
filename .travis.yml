@@ -26,9 +26,6 @@ matrix:
     - php: 5.4
       env:
         - PHPCS=1
-    - php: 5.4
-      env:
-        - FOC_VALIDATE=1
   allow_failures:
     - env: DB=mysql CAKE_VERSION=2.5
 
