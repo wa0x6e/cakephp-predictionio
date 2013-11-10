@@ -6,4 +6,14 @@
 		'engine' => ''
 	));
 
-	require_once App::pluginPath('PredictionIO') . 'vendor' . DS . 'autoload.php';
+	$files = array(
+	    APP . 'Vendor' . DS . 'autoload.php',
+	    App::pluginPath('PredictionIO') . 'vendor' . DS . 'autoload.php'
+	);
+
+	foreach ($files as $file) {
+	    if (file_exists($file)) {
+	        require_once $file;
+	        break;
+	    }
+	}
