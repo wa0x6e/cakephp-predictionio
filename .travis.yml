@@ -29,7 +29,7 @@ matrix:
       env:
         - FOC_VALIDATE=1
   allow_failures:
-    - env: CAKE_VERSION=2.5
+    - env: DB=mysql CAKE_VERSION=2.5
 
 before_script:
   - git clone https://github.com/FriendsOfCake/travis.git --depth 1 ../travis
