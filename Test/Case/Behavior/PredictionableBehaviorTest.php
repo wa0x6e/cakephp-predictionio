@@ -42,6 +42,18 @@ class PredictionableBehaviorTest extends CakeTestCase {
 		$this->Post->setupClient($this->PredictionIOClient);
 	}
 
+	public function testDefaultConfig() {
+		$this->assertEquals('your-key', Configure::read('predictionIO.appkey'));
+		$this->assertEquals('User', Configure::read('predictionIO.userModel'));
+		$this->assertEquals('', Configure::read('predictionIO.engine'));
+
+		$this->assertCount(3, Configure::read('predictionIO'));
+	}
+
+	public function testPredictionIOLibraryIsLoaded() {
+		$this->assertTrue(class_exists('\PredictionIO\PredictionIOClient'));
+	}
+
 /**
  * @covers PredictionableBehavior::afterSave
  */
