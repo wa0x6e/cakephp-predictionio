@@ -13,6 +13,7 @@ env:
     - CAKE_VERSION=2.2.0 DB=mysql
     - CAKE_VERSION=2.3.0 DB=mysql
     - CAKE_VERSION=2.4.0 DB=mysql
+    - CAKE_VERSION=2.5 DB=mysql
     - CAKE_VERSION=master DB=mysql
 
 matrix:
@@ -24,7 +25,8 @@ matrix:
       env:
         - CAKE_VERSION=master DB=mysql PHPCS=1
   allow_failures:
-    - CAKE_VERSION: master
+    - env: CAKE_VERSION=master
+    - env: CAKE_VERSION=2.5
 
 before_script:
   - git clone git://github.com/cakephp/cakephp ../cakephp && cd ../cakephp && git checkout $CAKE_VERSION
