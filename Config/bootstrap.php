@@ -7,8 +7,9 @@
 	));
 
 	$files = array(
-	    APP . 'Vendor' . DS . 'autoload.php',
-	    App::pluginPath('PredictionIO') . 'vendor' . DS . 'autoload.php'
+	    App::pluginPath('PredictionIO') . 'vendor' . DS . 'autoload.php',
+	     APP . 'Vendor' . DS . 'autoload.php',
+	     APP . 'vendor' . DS . 'autoload.php',
 	);
 
 	foreach ($files as $file) {
