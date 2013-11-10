@@ -62,7 +62,7 @@ class PredictionableBehavior extends ModelBehavior {
  *
  * @return  bool  Always true
  */
-	public function afterSave(Model $model, $created) {
+	public function afterSave(Model $model, $created, $options = array()) {
 		if ($created || $this->_containsCustomFields($model)) {
 			$response = $this->client->execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildCreateCommand($model)));
 		}
