@@ -33,6 +33,7 @@ before_script:
   - git clone https://github.com/FriendsOfCake/travis.git --depth 1 ../travis
   - ../travis/before_script.sh
   - echo "CakePlugin::loadAll(array('$PLUGIN_NAME' => array('bootstrap' => true)));" >> ../cakephp/app/Config/bootstrap.php
+  - cp ../cakephp/app/Plugin/$PLUGIN_NAME/Test/phpunit.xml ../cakephp/app/phpunit.xml
 
 script:
   - ../travis/script.sh
