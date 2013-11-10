@@ -43,9 +43,8 @@ class PredictionableBehavior extends ModelBehavior {
 
 		if (!isset($this->settings[$model->alias]['types'])) {
 			$this->settings[$model->alias]['types'] = array($model->alias);
-		} elseif (!is_array($this->settings[$model->alias])) {
-			$this->settings[$model->alias]['types'] = array($this->settings[$model->alias]['types']);
 		}
+		$this->settings[$model->alias]['types'] = (array)$this->settings[$model->alias]['types'];
 
 		$this->setupClient($model);
 	}
