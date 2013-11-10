@@ -31,6 +31,8 @@ matrix:
   allow_failures:
     - env: DB=mysql CAKE_VERSION=2.5
       php: 5.4
+    - env: DB=mysql CAKE_VERSION=2.5
+      php: 5.5
 
 before_script:
   - git clone https://github.com/FriendsOfCake/travis.git --depth 1 ../travis
