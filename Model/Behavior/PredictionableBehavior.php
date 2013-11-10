@@ -24,13 +24,11 @@
  */
 class PredictionableBehavior extends ModelBehavior {
 
-
 	public $settings = array();
 
 	public $client = null;
 
-	public function setup(Model $model, $config = array())
-	{
+	public function setup(Model $model, $config = array()) {
 		$default = array(
 			'userModel' => Configure::read('predictionIO.userModel'),
 			'fields' => array(),
@@ -41,11 +39,11 @@ class PredictionableBehavior extends ModelBehavior {
 		if (!isset($this->settings[$model->alias])) {
 			$this->settings[$model->alias] = $default;
 		}
-		$this->settings[$model->alias] = array_merge($this->settings[$model->alias], (array) $config);
+		$this->settings[$model->alias] = array_merge($this->settings[$model->alias], (array)$config);
 
 		if (!isset($this->settings[$model->alias]['types'])) {
 			$this->settings[$model->alias]['types'] = array($model->alias);
-		} else if (!is_array($this->settings[$model->alias])) {
+		} elseif (!is_array($this->settings[$model->alias])) {
 			$this->settings[$model->alias]['types'] = array($this->settings[$model->alias]['types']);
 		}
 
@@ -90,6 +88,7 @@ class PredictionableBehavior extends ModelBehavior {
  * @param  string $actionName name of the performed action
  * @param  mixed  $itemId     item's primary key
  * @throws InvalidActionOnModelException if trying to record an action on a non-user model
+ * @throws InvalidUserException if trying to record an action on a non-initialized user
  *
  * @return bool Always true
  */
@@ -115,6 +114,8 @@ class PredictionableBehavior extends ModelBehavior {
  * @param  Model  $model user model
  * @param  array  $query query arguments
  * @throws InvalidActionOnModelException if trying to get recommendations on a non-user model
+ * @throws InvalidUserException if trying to get recommendations on a non-initialized user
+ *
  * @return array         An array of items' ID
  */
 	public function getRecommendation(Model $model, $query = array()) {
@@ -131,11 +132,11 @@ class PredictionableBehavior extends ModelBehavior {
 		}
 
 		try {
-		    $this->client->identify($query['id']);
-		    unset($query['id']);
-		    return $this->client->execute(call_user_func_array(array($this->client, 'getCommand'), array('itemrec_get_top_n', $this->__processRetrievalQuery($model, $query))));
+			$this->client->identify($query['id']);
+			unset($query['id']);
+			return $this->client->execute(call_user_func_array(array($this->client, 'getCommand'), array('itemrec_get_top_n', $this->__processRetrievalQuery($model, $query))));
 		} catch (Exception $e) {
-		    echo 'Caught exception: ', $e->getMessage(), "\n";
+			echo 'Caught exception: ', $e->getMessage(), "\n";
 		}
 	}
 
@@ -166,9 +167,9 @@ class PredictionableBehavior extends ModelBehavior {
 		unset($query['id']);
 
 		try {
-		     return $this->client->execute(call_user_func_array(array($this->client, 'getCommand'), array('itemsin_get_top_n', $this->__processRetrievalQuery($model, $query))));
+			return $this->client->execute(call_user_func_array(array($this->client, 'getCommand'), array('itemsin_get_top_n', $this->__processRetrievalQuery($model, $query))));
 		} catch (Exception $e) {
-		    echo 'Caught exception: ', $e->getMessage(), "\n";
+			echo 'Caught exception: ', $e->getMessage(), "\n";
 		}
 	}
 
@@ -209,8 +210,6 @@ class PredictionableBehavior extends ModelBehavior {
 	public function enablePrediction(Model $model) {
 		return $this->disablePrediction($model, false);
 	}
-
-
 
 /**
  * Check if the current model contains any custom fields
@@ -263,7 +262,7 @@ class PredictionableBehavior extends ModelBehavior {
 
 		// Append a prefix to native keyname
 		foreach ($command[1] as $key => $value) {
-			if (in_array($key , $reservedKeys)) {
+			if (in_array($key, $reservedKeys)) {
 				$command[1]['pio_' . $key] = $value;
 				unset($command[1][$key]);
 			}
@@ -294,7 +293,7 @@ class PredictionableBehavior extends ModelBehavior {
 
 		// Append a prefix to native keyname
 		foreach ($optionalParameters as $key => $value) {
-			if (in_array($key , $reservedKeys)) {
+			if (in_array($key, $reservedKeys)) {
 				$optionalParameters['pio_' . $key] = $value;
 				unset($optionalParameters[$key]);
 			}
@@ -321,8 +320,8 @@ class PredictionableBehavior extends ModelBehavior {
 
 				// Flatten types
 				if ($key === 'itypes') {
-					$value = (array) $value;
-					foreach($value as &$type) {
+					$value = (array)$value;
+					foreach ($value as &$type) {
 						if ($type instanceof Model) {
 							$type = $type->name;
 						}
@@ -336,8 +335,17 @@ class PredictionableBehavior extends ModelBehavior {
 
 		return $query;
 	}
+
 }
 
-class InvalidActionOnModelException extends CakeException {};
-class InvalidUserException extends CakeException {};
-class InvalidItemException extends CakeException {};
+class InvalidActionOnModelException extends CakeException {
+
+};
+
+class InvalidUserException extends CakeException {
+
+};
+
+class InvalidItemException extends CakeException {
+
+};
