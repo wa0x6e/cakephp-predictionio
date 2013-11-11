@@ -60,7 +60,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	public function testCreateUserWillCreateAUserRecord() {
 		$user = array('id' => 45, 'user' => 'jenny', 'password' => 'password');
 
-		$expected = array('create_user', array('pio_uid' => $user['id']));
+		$expected = array('create_user', array('pio_uid' => 'user' . $user['id']));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -77,7 +77,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	public function testCreatePostWillCreateAnItemRecord() {
 		$post = array('id' => 46, 'author_id' => 25, 'title' => 'My First post');
 
-		$expected = array('create_item', array('pio_iid' => $post['id'], 'pio_itypes' => 'Post'));
+		$expected = array('create_item', array('pio_iid' => 'post' . $post['id'], 'pio_itypes' => 'Post'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -97,7 +97,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 
 		$user = array('id' => 45, 'user' => 'jenny', 'password' => 'password');
 
-		$expected = array('create_user', array('pio_uid' => $user['id'], 'user' => $user['user']));
+		$expected = array('create_user', array('pio_uid' => 'user' . $user['id'], 'user' => $user['user']));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -117,7 +117,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 
 		$post = array('id' => 46, 'author_id' => 25, 'title' => 'My First post', 'body' => 'body?');
 
-		$expected = array('create_item', array('pio_iid' => $post['id'], 'author_id' => $post['author_id'], 'title' => $post['title'], 'pio_itypes' => 'Post'));
+		$expected = array('create_item', array('pio_iid' => 'post' . $post['id'], 'author_id' => $post['author_id'], 'title' => $post['title'], 'pio_itypes' => 'Post'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -137,7 +137,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 
 		$post = array('id' => 46, 'author_id' => 25, 'title' => 'My First post', 'body' => 'body?');
 
-		$expected = array('create_item', array('pio_iid' => $post['id'], 'pio_itypes' => 'Movie,Entertainment'));
+		$expected = array('create_item', array('pio_iid' => 'post' . $post['id'], 'pio_itypes' => 'Movie,Entertainment'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -157,7 +157,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 
 		$post = array('id' => 46, 'author_id' => 25, 'title' => 'My First post', 'body' => 'body?');
 
-		$expected = array('create_user', array('pio_uid' => $post['id']));
+		$expected = array('create_user', array('pio_uid' => 'post' . $post['id']));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -179,7 +179,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 
 		$post = array('id' => 46, 'author_id' => 25, 'title' => 'My First post', 'body' => 'body?');
 
-		$expected = array('create_user', array('pio_uid' => $post['id']));
+		$expected = array('create_user', array('pio_uid' => 'post' . $post['id']));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -194,7 +194,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
  * @covers PredictionableBehavior::afterDelete
  */
 	public function testDeleteUserWillDeleteAUserRecord() {
-		$expected = array('delete_user', array('pio_uid' => 1));
+		$expected = array('delete_user', array('pio_uid' => 'user1'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -208,7 +208,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
  * @covers PredictionableBehavior::afterDelete
  */
 	public function testDeletePostWillDeleteAnItemRecord() {
-		$expected = array('delete_item', array('pio_iid' => 1));
+		$expected = array('delete_item', array('pio_iid' => 'post1'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -262,7 +262,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 
 		$user = array('id' => 1, 'user' => 'jenny');
 
-		$expected = array('create_user', array('pio_uid' => $user['id'], 'user' => $user['user']));
+		$expected = array('create_user', array('pio_uid' => 'user' . $user['id'], 'user' => $user['user']));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -286,7 +286,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 
 		$post = array('id' => 1, 'title' => 'my new title');
 
-		$expected = array('create_item', array('pio_iid' => $post['id'], 'title' => $post['title'], 'pio_itypes' => 'Post'));
+		$expected = array('create_item', array('pio_iid' => 'post' . $post['id'], 'title' => $post['title'], 'pio_itypes' => 'Post'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -304,16 +304,36 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	public function testRecordAction() {
 		$this->User->id = 1;
 
-		$expected = array('record_action_on_item', array('pio_action' => 'like', 'pio_iid' => 53));
+		$expected = array('record_action_on_item', array('pio_action' => 'like', 'pio_iid' => 'post53'));
 
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
 		);
-		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo(1));
+		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo('user1'));
 		$this->PredictionIOClient->expects($this->once())->method('execute');
 
-		$this->assertTrue($this->User->recordAction($expected[1]['pio_action'], $expected[1]['pio_iid']));
+		$this->assertTrue($this->User->recordAction($expected[1]['pio_action'], array('id' => 53, 'model' => 'Post')));
+	}
+
+/**
+ * @covers PredictionableBehavior::recordAction
+ */
+	public function testRecordActionWithAModelAsTarget() {
+		$this->User->id = 1;
+
+		$this->Post->id = 53;
+
+		$expected = array('record_action_on_item', array('pio_action' => 'like', 'pio_iid' => 'post53'));
+
+		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
+			$this->equalTo($expected[0]),
+			$this->equalTo($expected[1])
+		);
+		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo('user1'));
+		$this->PredictionIOClient->expects($this->once())->method('execute');
+
+		$this->assertTrue($this->User->recordAction($expected[1]['pio_action'], $this->Post));
 	}
 
 /**
@@ -350,16 +370,16 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	public function testRecordActionWithCustomFields() {
 		$this->User->id = 1;
 
-		$expected = array('record_action_on_item', array('pio_action' => 'like', 'pio_iid' => 53, 'rating' => 6, 'level' => 'medium'));
+		$expected = array('record_action_on_item', array('pio_action' => 'like', 'pio_iid' => 'post53', 'rating' => 6, 'level' => 'medium'));
 
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
 		);
-		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo(1));
+		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo('user1'));
 		$this->PredictionIOClient->expects($this->once())->method('execute');
 
-		$this->User->recordAction($expected[1]['pio_action'], $expected[1]['pio_iid'], array('rating' => 6, 'level' => 'medium'));
+		$this->User->recordAction($expected[1]['pio_action'], array('id' => 53, 'model' => 'Post'), array('rating' => 6, 'level' => 'medium'));
 	}
 
 /**
@@ -370,7 +390,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 
 		$expected = array('itemrec_get_top_n', array('pio_engine' => '', 'pio_n' => 10));
 
-		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo(1));
+		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo('user1'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -388,7 +408,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 
 		$expected = array('itemrec_get_top_n', array('pio_engine' => '', 'pio_n' => 10));
 
-		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo(52));
+		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo('user52'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -409,7 +429,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 
 		$expected = array('itemrec_get_top_n', array('pio_engine' => 'engine1', 'pio_n' => 12, 'pio_attributes' => 'a,b', 'pio_itypes' => 'Post,User'));
 
-		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo(1));
+		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo('user1'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -439,7 +459,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 
 		$expected = array('itemrec_get_top_n', array('pio_engine' => 'engine4', 'pio_n' => 52));
 
-		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo(1));
+		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo('user1'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -477,7 +497,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	public function testGetSimilar() {
 		$this->Post->id = 1;
 
-		$expected = array('itemsin_get_top_n', array('pio_engine' => '', 'pio_n' => 10, 'pio_iid' => 1));
+		$expected = array('itemsin_get_top_n', array('pio_engine' => '', 'pio_n' => 10, 'pio_iid' => 'post1'));
 
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
@@ -494,7 +514,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	public function testGetSimilarWithTargetIdSetFromArguments() {
 		$this->Post->id = 1;
 
-		$expected = array('itemsin_get_top_n', array('pio_engine' => '', 'pio_n' => 10, 'pio_iid' => 52));
+		$expected = array('itemsin_get_top_n', array('pio_engine' => '', 'pio_n' => 10, 'pio_iid' => 'post52'));
 
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
@@ -511,7 +531,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	public function testGetSimilarWithOptionalParameters() {
 		$this->Post->id = 1;
 
-		$expected = array('itemsin_get_top_n', array('pio_engine' => '', 'pio_n' => 10, 'pio_iid' => 1, 'pio_attributes' => 'a,b'));
+		$expected = array('itemsin_get_top_n', array('pio_engine' => '', 'pio_n' => 10, 'pio_iid' => 'post1', 'pio_attributes' => 'a,b'));
 
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
@@ -550,7 +570,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	public function testDisablePredictionOnUser() {
 		$this->User->id = 1;
 
-		$expected = array('create_user', array('pio_inactive' => 'true', 'pio_uid' => 1));
+		$expected = array('create_user', array('pio_inactive' => 'true', 'pio_uid' => 'user1'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -565,7 +585,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	public function testEnablePredictionOnUser() {
 		$this->User->id = 1;
 
-		$expected = array('create_user', array('pio_inactive' => 'false', 'pio_uid' => 1));
+		$expected = array('create_user', array('pio_inactive' => 'false', 'pio_uid' => 'user1'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -580,7 +600,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	public function testDisablePredictionOnItem() {
 		$this->Post->id = 1;
 
-		$expected = array('create_item', array('pio_inactive' => 'true', 'pio_iid' => 1));
+		$expected = array('create_item', array('pio_inactive' => 'true', 'pio_iid' => 'post1'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -595,7 +615,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	public function testEnablePredictionOnItem() {
 		$this->Post->id = 1;
 
-		$expected = array('create_item', array('pio_inactive' => 'false', 'pio_iid' => 1));
+		$expected = array('create_item', array('pio_inactive' => 'false', 'pio_iid' => 'post1'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -623,7 +643,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
  */
 	public function testFindRecommendedWithPredictionArguments() {
 		$expected = array('itemrec_get_top_n', array('pio_n' => 1, 'pio_engine' => 'engine5'));
-		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo(1));
+		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo('user1'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
@@ -670,7 +690,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
  * @covers PredictionableBehavior::findSimilar
  */
 	public function testFindSimilarWithPredictionArguments() {
-		$expected = array('itemsin_get_top_n', array('pio_n' => 1, 'pio_iid' => 6, 'pio_engine' => 'engine5'));
+		$expected = array('itemsin_get_top_n', array('pio_n' => 1, 'pio_iid' => 'post6', 'pio_engine' => 'engine5'));
 		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
 			$this->equalTo($expected[0]),
 			$this->equalTo($expected[1])
