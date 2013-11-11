@@ -337,6 +337,34 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	}
 
 /**
+ * Test that triggering a recordAction witn an invalid target throw an exception
+ *
+ * @covers PredictionableBehavior::recordAction
+ * @expectedException InvalidItemException
+ * @expectedExceptionMessage The target item is not valid
+ */
+	public function testRecordActionWithInvalidTargetArgument() {
+		$this->User->id = 1;
+		$this->Post->id = 50;
+
+		$this->User->recordAction('like', 1);
+	}
+
+/**
+ * Test that triggering a recordAction witn an invalid target throw an exception
+ *
+ * @covers PredictionableBehavior::recordAction
+ * @expectedException InvalidItemException
+ * @expectedExceptionMessage The Post is not valid
+ */
+	public function testRecordActionWithNotInitializedTarget() {
+		$this->User->id = 1;
+		$this->Post->create();
+
+		$this->User->recordAction('like', $this->Post);
+	}
+
+/**
  * Test that triggering a recordAction on model other that the User Model
  * will throw an exception
  *
@@ -347,7 +375,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 	public function testRecordActionOnNonUserModel() {
 		$this->Post->id = 1;
 
-		$this->Post->recordAction('like', 53);
+		$this->Post->recordAction('like', $this->Post);
 	}
 
 /**
@@ -356,10 +384,10 @@ class PredictionableBehaviorTest extends CakeTestCase {
  *
  * @covers PredictionableBehavior::recordAction
  * @expectedException InvalidUserException
- * @expectedExceptionMessage The current user does not have a primary key
+ * @expectedExceptionMessage The User is not valid
  */
 	public function testRecordActionOnUserWithNoPrimaryKey() {
-		$this->User->recordAction('like', 53);
+		$this->User->recordAction('like', $this->Post);
 	}
 
 /**
@@ -485,7 +513,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
  *
  * @covers PredictionableBehavior::getRecommendation
  * @expectedException InvalidUserException
- * @expectedExceptionMessage You have to specify the ID of the user to get the recommendations for
+ * @expectedExceptionMessage The User is not valid
  */
 	public function testGetRecommendationThrownAnExceptionOnUserWithNoPrimaryKey() {
 		$this->User->getRecommendation();
