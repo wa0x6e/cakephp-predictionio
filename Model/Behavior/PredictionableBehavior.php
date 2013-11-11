@@ -33,7 +33,8 @@ class PredictionableBehavior extends ModelBehavior {
 			'userModel' => Configure::read('predictionIO.userModel'),
 			'fields' => array(),
 			'engine' => Configure::read('predictionIO.engine'),
-			'count' => 10
+			'count' => 10,
+			'prefix' => strtolower($model->alias)
 		);
 
 		if (!isset($this->settings[$model->alias])) {
@@ -99,22 +100,33 @@ class PredictionableBehavior extends ModelBehavior {
  * @link   http://docs.prediction.io/current/apis/u2i.html
  * @param  Model  $model      user model
  * @param  string $actionName name of the performed action
- * @param  mixed  $itemId     item's primary key
+ * @param  Model|array  $targetItem     Target item model, or an array with the item Model name and primary key
  * @throws InvalidActionOnModelException if trying to record an action on a non-user model
  * @throws InvalidUserException if trying to record an action on a non-initialized user
+ * @throws InvalidItemException if the target item is invalid
  *
  * @return bool Always true
  */
-	public function recordAction(Model $model, $actionName, $itemId, $optionalParameters = array()) {
-		if ($model->name !== $this->settings[$model->alias]['userModel']) {
-			throw new InvalidActionOnModelException(__d('predictionIO', 'You can not record an action on the ' . $model->name . ' model'));
+	public function recordAction(Model $model, $actionName, $targetItem, $optionalParameters = array()) {
+		if (!$this->__isUserModel($model)) {
+			throw new InvalidActionOnModelException(__d('predictionIO', 'You can not record an action on the ' . $model->alias . ' model'));
 		}
 
 		if (empty($model->{$model->primaryKey})) {
 			throw new InvalidUserException(__d('preditionIO', 'The current user does not have a primary key'));
 		}
 
-		$this->client->identify($model->{$model->primaryKey});
+		if ($targetItem instanceof Model) {
+			$itemId = $this->_getModelId($targetItem);
+		} elseif (is_array($targetItem) && isset($targetItem['id']) && isset($targetItem['model'])) {
+			$itemId = $this->_getModelId($targetItem['model'], $targetItem['id'])
+		}
+
+		if (!isset($itemId)) {
+			throw new InvalidItemException(__d('preditionIO', 'The target item is not valid'));
+		}
+
+		$this->client->identify($this->_getModelId($model));
 		$this->client->execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildRecordActionCommand($model, $actionName, $itemId, $optionalParameters)));
 
 		return true;
@@ -132,21 +144,23 @@ class PredictionableBehavior extends ModelBehavior {
  * @return array         An array of items' ID
  */
 	public function getRecommendation(Model $model, $query = array()) {
-		if ($model->name !== $this->settings[$model->alias]['userModel']) {
+		if (!$this->__isUserModel($model)) {
 			throw new InvalidActionOnModelException(__d('predictionIO', 'You can get recommendations only on the ' . $this->settings[$model->alias]['userModel'] . ' model'));
 		}
 
-		if (!isset($query['id']) && !empty($model->{$model->primaryKey})) {
-			$query['id'] = $model->{$model->primaryKey};
+		if (isset($query['id'])) {
+			$userId = $query['id'];
+			unset($query['id']);
+		} else {
+			$userId = $model->{$model->primaryKey};
 		}
 
-		if (!isset($query['id'])) {
+		if (empty($userId)) {
 			throw new InvalidUserException(__d('predictionIO', 'You have to specify the ID of the user to get the recommendations for'));
 		}
 
 		try {
-			$this->client->identify($query['id']);
-			unset($query['id']);
+			$this->client->identify($userId);
 			return $this->client->execute(call_user_func_array(array($this->client, 'getCommand'), array('itemrec_get_top_n', $this->__processRetrievalQuery($model, $query))));
 		} catch (Exception $e) {
 			echo 'Caught exception: ', $e->getMessage(), "\n";
@@ -164,8 +178,8 @@ class PredictionableBehavior extends ModelBehavior {
  * @return array         An array of items' ID
  */
 	public function getSimilar(Model $model, $query = array()) {
-		if ($model->name === $this->settings[$model->alias]['userModel']) {
-			throw new InvalidActionOnModelException(__d('predictionIO', 'You can not get similar items on the ' . $model->name . ' model'));
+		if ($this->__isUserModel($model)) {
+			throw new InvalidActionOnModelException(__d('predictionIO', 'You can not get similar items on the ' . $model->alias . ' model'));
 		}
 
 		if (!isset($query['id']) && !empty($model->{$model->primaryKey})) {
@@ -217,7 +231,7 @@ class PredictionableBehavior extends ModelBehavior {
 	}
 
 	public function disablePrediction(Model $model, $status = true) {
-		return $this->__setInactive(($model->name === $this->settings[$model->alias]['userModel']? 'uid' : 'iid'), $model->{$model->primaryKey}, $status);
+		return $this->__setInactive(($this->__isUserModel($model) ? 'uid' : 'iid'), $this->_getModelId($model), $status);
 	}
 
 	public function enablePrediction(Model $model) {
@@ -244,6 +258,20 @@ class PredictionableBehavior extends ModelBehavior {
 	}
 
 /**
+ * Return a unique model ID
+ *
+ * @param  Model $model The model
+ * @return string A unique model ID
+ */
+	protected function _getModelId($model, $id = null) {
+		if () {
+			return $this->settings[$model->alias]['prefix'] . $model->{$model->primaryKey};
+		} else {
+			return $this->settings[$model]['prefix'] . $id;
+		}
+	}
+
+/**
  * @codeCoverageIgnore
  */
 	private function __setInactive($type, $id, $status) {
@@ -259,11 +287,11 @@ class PredictionableBehavior extends ModelBehavior {
  * @codeCoverageIgnore
  */
 	private function __buildCreateCommand(Model $model) {
-		if ($model->name === $this->settings[$model->alias]['userModel']) {
-			$command = array('create_user', array('uid' => $model->{$model->primaryKey}));
+		if ($this->__isUserModel($model)) {
+			$command = array('create_user', array('uid' => $this->_getModelId($model)));
 			$reservedKeys = array('uid', 'latlng', 'inactive');
 		} else {
-			$command = array('create_item', array('iid' => $model->{$model->primaryKey}, 'itypes' => implode(',', $this->settings[$model->alias]['types'])));
+			$command = array('create_item', array('iid' => $this->_getModelId($model), 'itypes' => implode(',', $this->settings[$model->alias]['types'])));
 			$reservedKeys = array('iid', 'itypes', 'latlng', 'inactive', 'startT', 'endT', 'price', 'profit');
 		}
 
@@ -288,10 +316,10 @@ class PredictionableBehavior extends ModelBehavior {
  * @codeCoverageIgnore
  */
 	private function __buildDeleteCommand(Model $model) {
-		if ($model->name === $this->settings[$model->alias]['userModel']) {
-			$command = array('delete_user', array('pio_uid' => $model->{$model->primaryKey}));
+		if ($this->__isUserModel($model)) {
+			$command = array('delete_user', array('pio_uid' => $this->_getModelId($model)));
 		} else {
-			$command = array('delete_item', array('pio_iid' => $model->{$model->primaryKey}));
+			$command = array('delete_item', array('pio_iid' => $this->_getModelId($model)));
 		}
 
 		return $command;
@@ -336,7 +364,7 @@ class PredictionableBehavior extends ModelBehavior {
 					$value = (array)$value;
 					foreach ($value as &$type) {
 						if ($type instanceof Model) {
-							$type = $type->name;
+							$type = $type->alias;
 						}
 					}
 				}
@@ -349,6 +377,15 @@ class PredictionableBehavior extends ModelBehavior {
 		return $query;
 	}
 
+/**
+ * Check if the specified model is the User Model
+ *
+ * @param  Model  $model Model tp check
+ * @return bool True if the model is the User model
+ */
+	private function __isUserModel(Model $model) {
+		return ($model->alias === $this->settings[$model->alias]['userModel']);
+	}
 }
 
 class InvalidActionOnModelException extends CakeException {
