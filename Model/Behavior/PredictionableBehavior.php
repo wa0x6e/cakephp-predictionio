@@ -119,7 +119,7 @@ class PredictionableBehavior extends ModelBehavior {
 		if ($targetItem instanceof Model) {
 			$itemId = $this->_getModelId($targetItem);
 		} elseif (is_array($targetItem) && isset($targetItem['id']) && isset($targetItem['model'])) {
-			$itemId = $this->_getModelId($targetItem['model'], $targetItem['id'])
+			$itemId = $this->_getModelId($targetItem['model'], $targetItem['id']);
 		}
 
 		if (!isset($itemId)) {
@@ -160,7 +160,7 @@ class PredictionableBehavior extends ModelBehavior {
 		}
 
 		try {
-			$this->client->identify($userId);
+			$this->client->identify($this->_getModelId($model->alias, $userId));
 			return $this->client->execute(call_user_func_array(array($this->client, 'getCommand'), array('itemrec_get_top_n', $this->__processRetrievalQuery($model, $query))));
 		} catch (Exception $e) {
 			echo 'Caught exception: ', $e->getMessage(), "\n";
@@ -190,7 +190,7 @@ class PredictionableBehavior extends ModelBehavior {
 			throw new InvalidItemException(__d('predictionIO', 'You have to specify the targeted item ID'));
 		}
 
-		$query['iid'] = $query['id'];
+		$query['iid'] = $this->_getModelId($model->alias, $query['id']);
 		unset($query['id']);
 
 		try {
@@ -264,7 +264,7 @@ class PredictionableBehavior extends ModelBehavior {
  * @return string A unique model ID
  */
 	protected function _getModelId($model, $id = null) {
-		if () {
+		if ($model instanceof Model) {
 			return $this->settings[$model->alias]['prefix'] . $model->{$model->primaryKey};
 		} else {
 			return $this->settings[$model]['prefix'] . $id;
@@ -386,6 +386,7 @@ class PredictionableBehavior extends ModelBehavior {
 	private function __isUserModel(Model $model) {
 		return ($model->alias === $this->settings[$model->alias]['userModel']);
 	}
+
 }
 
 class InvalidActionOnModelException extends CakeException {
