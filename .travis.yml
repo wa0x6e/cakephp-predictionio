@@ -33,18 +33,19 @@ before_script:
   - git clone https://github.com/FriendsOfCake/travis.git --depth 1 ../travis
   - ../travis/before_script.sh
   - echo "CakePlugin::loadAll(array('$PLUGIN_NAME' => array('bootstrap' => true)));" >> ../cakephp/app/Config/bootstrap.php
-  - echo "<phpunit colors="true">
-    <filter>
-        <whitelist addUncoveredFilesFromWhitelist="true">
-            <directory suffix=\".php\">Plugin/$PLUGIN_NAME</directory>
-            <exclude>
-                <directory suffix=\".php\">Plugin/$PLUGIN_NAME/vendor</directory>
-                <directory suffix=\".php\">Plugin/$PLUGIN_NAME/Test</directory>
-                <directory suffix=\".php\">Plugin/$PLUGIN_NAME/Config</directory>
-            </exclude>
-        </whitelist>
-    </filter>
-</phpunit>" > phpunit.xml
+  - echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+    <phpunit colors=\"true\">
+        <filter>
+            <whitelist addUncoveredFilesFromWhitelist=\"true\">
+                <directory suffix=\".php\">Plugin/$PLUGIN_NAME</directory>
+                <exclude>
+                    <directory suffix=\".php\">Plugin/$PLUGIN_NAME/vendor</directory>
+                    <directory suffix=\".php\">Plugin/$PLUGIN_NAME/Test</directory>
+                    <directory suffix=\".php\">Plugin/$PLUGIN_NAME/Config</directory>
+                </exclude>
+            </whitelist>
+        </filter>
+    </phpunit>" > phpunit.xml
 
 script:
   - ../travis/script.sh
