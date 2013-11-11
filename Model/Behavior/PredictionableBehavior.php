@@ -231,7 +231,8 @@ class PredictionableBehavior extends ModelBehavior {
 			return false;
 		}
 
-		return !empty(array_intersect_key($model->data[$model->alias], array_flip($this->settings[$model->alias]['fields'])));
+		$keys = array_intersect_key($model->data[$model->alias], array_flip($this->settings[$model->alias]['fields']));
+		return !empty($keys);
 	}
 
 /**
@@ -301,10 +302,13 @@ class PredictionableBehavior extends ModelBehavior {
  * @codeCoverageIgnore
  */
 	private function __buildDeleteCommand(Model $model) {
-		if ($this->__isUserModel($model)) {
-			return array('delete_user', array('pio_uid' => $this->_getModelId($model)));
-		}
-		return array('delete_item', array('pio_iid' => $this->_getModelId($model)));
+		$keyNames = array(
+			0 => array('user', 'uid'),
+			1 => array('item', 'iid')
+		);
+		$keyName = $keyNames[$this->__isUserModel($model) ? 0 : 1];
+
+		return array('delete_' . $keyName[0], array('pio_' . $keyName[1] => $this->_getModelId($model)));
 	}
 
 /**
