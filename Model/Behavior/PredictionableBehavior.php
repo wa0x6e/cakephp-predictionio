@@ -28,13 +28,15 @@ class PredictionableBehavior extends ModelBehavior {
 
 	public $client = null;
 
+	public static $ITEMID_SEPARATOR = ':';
+
 	public function setup(Model $model, $config = array()) {
 		$default = array(
 			'userModel' => Configure::read('predictionIO.userModel'),
 			'fields' => array(),
 			'engine' => Configure::read('predictionIO.engine'),
 			'count' => 10,
-			'prefix' => strtolower($model->alias)
+			'prefix' => $model->alias . self::$ITEMID_SEPARATOR
 		);
 
 		if (!isset($this->settings[$model->alias])) {
@@ -51,7 +53,13 @@ class PredictionableBehavior extends ModelBehavior {
 	}
 
 	public function setupClient(Model $model, $client = null) {
-		$this->client = ($client === null ? \PredictionIO\PredictionIOClient::factory(array('appkey' => Configure::read('predictionIO.appkey'))) : $client);
+		$this->client = ($client === null ?
+			\PredictionIO\PredictionIOClient::factory(array(
+				'appkey' => Configure::read('predictionIO.appkey'),
+				'apiurl' => Configure::read('predictionIO.apiurl'),
+			)) :
+			$client
+		);
 	}
 
 /**
@@ -68,7 +76,7 @@ class PredictionableBehavior extends ModelBehavior {
  */
 	public function afterSave(Model $model, $created, $options = array()) {
 		if ($created || $this->_containsCustomFields($model)) {
-			$this->client->execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildCreateCommand($model)));
+			$this->__execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildCreateCommand($model)));
 		}
 	}
 
@@ -83,7 +91,7 @@ class PredictionableBehavior extends ModelBehavior {
  * @return  void
  */
 	public function afterDelete(Model $model) {
-		$this->client->execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildDeleteCommand($model)));
+		$this->__execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildDeleteCommand($model)));
 	}
 
 /**
@@ -114,7 +122,7 @@ class PredictionableBehavior extends ModelBehavior {
 			throw new InvalidItemException(__d('predictionIO', 'The target item is not valid'));
 		}
 
-		$this->client->execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildRecordActionCommand($model, $actionName, $itemId, $optionalParameters)));
+		$this->__execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildRecordActionCommand($model, $actionName, $itemId, $optionalParameters)));
 
 		return true;
 	}
@@ -125,30 +133,39 @@ class PredictionableBehavior extends ModelBehavior {
  * @link   http://docs.prediction.io/current/engines/itemrec/api.html
  * @param  Model  $model user model
  * @param  array  $query query arguments
- * @throws InvalidActionOnModelException if trying to get recommendations on a non-user model
  * @throws InvalidUserException if trying to get recommendations on a non-initialized user
  *
- * @return array         An array of items' ID
+ * @return array         An array of recommendations
  */
 	public function getRecommendation(Model $model, $query = array()) {
-		if (!$this->__isUserModel($model)) {
-			throw new InvalidActionOnModelException(__d('predictionIO', 'You can get recommendations only on the ' . $this->settings[$model->alias]['userModel'] . ' model'));
+		$userClass = $this->settings[$model->alias]['userModel'];
+
+		// Check that we have at least a User 1 somewhere
+		if (!$this->__isUserModel($model) && !isset($model->$userClass) && !isset($query['id'])) {
+			throw new InvalidUserException(__d('predictionIO', 'The User is not valid'));
 		}
 
 		if (isset($query['id'])) {
 			$userId = $query['id'];
 			unset($query['id']);
 		} else {
-			$userId = $model->{$model->primaryKey};
+			$userId = $this->__isUserModel($model) ? $model->{$model->primaryKey} : $model->$userClass->{$model->primaryKey};
 		}
 
-		$this->client->identify($this->_getModelId($model->alias, $userId));
+		$this->client->identify($this->_getModelId($userClass, $userId));
+		$response = $this->__execute(call_user_func_array(array($this->client, 'getCommand'), array('itemrec_get_top_n', $this->__processRetrievalQuery($model, $query))));
 
-		try {
-			return $this->client->execute(call_user_func_array(array($this->client, 'getCommand'), array('itemrec_get_top_n', $this->__processRetrievalQuery($model, $query))));
-		} catch (Exception $e) {
-			echo 'Caught exception: ', $e->getMessage(), "\n";
+		$return = array_map(function($id) { return array_combine(array('model', 'id'), explode(self::$ITEMID_SEPARATOR, $id)); }, $response['piids']);
+
+		if (isset($query['attributes']) && !empty($query['attributes'])) {
+			foreach ($query['attributes'] as $attribute) {
+				for($i = 0, $total = count($return); $i < $total; $i++) {
+					$return[$i][$attribute] = $response[$attribute][$i];
+				}
+			}
 		}
+
+		return $return;
 	}
 
 /**
@@ -177,11 +194,7 @@ class PredictionableBehavior extends ModelBehavior {
 		$query['iid'] = $this->_getModelId($model->alias, $query['id']);
 		unset($query['id']);
 
-		try {
-			return $this->client->execute(call_user_func_array(array($this->client, 'getCommand'), array('itemsin_get_top_n', $this->__processRetrievalQuery($model, $query))));
-		} catch (Exception $e) {
-			echo 'Caught exception: ', $e->getMessage(), "\n";
-		}
+		return $this->__execute(call_user_func_array(array($this->client, 'getCommand'), array('itemsin_get_top_n', $this->__processRetrievalQuery($model, $query))));
 	}
 
 	public function findRecommended(Model $model, $type, $query) {
@@ -192,11 +205,22 @@ class PredictionableBehavior extends ModelBehavior {
 			$query['prediction']['count'] = $query['limit'];
 		}
 
-		$query['conditions'][$model->alias . '.' . $model->primaryKey] = $this->getRecommendation($model, $query['prediction']);
+		$recommendations = $this->getRecommendation($model, $query['prediction']);
+		$recommendationsConditions = array();
+		foreach ($recommendations as $entry) {
+			$recommendationsConditions[$entry['model']][] = $entry['id'];
+		}
 
-		unset($query['prediction']);
+		$results = array();
+		foreach ($recommendationsConditions as $modelName => $ids) {
+			$targetModel = isset($model->$modelName) ? $model->$modelName : ClassRegistry::init($modelName);
+			$targetQuery = $query;
+			unset($targetQuery['prediction']);
+			$targetQuery['conditions'][$targetModel->alias . '.id'] = $ids;
 
-		return $model->find($type, $query);
+			$results = $targetModel->find($type, $targetQuery);
+		}
+		return $results;
 	}
 
 	public function findSimilar(Model $model, $type, $query) {
@@ -258,10 +282,29 @@ class PredictionableBehavior extends ModelBehavior {
 	}
 
 /**
+ * Send a command to the PredictionIO server
+ *
+ * @codeCoverageIgnore
+ *
+ * @return array The server response to the command
+ */
+	private function __execute($command) {
+		try {
+			return $this->client->execute($command);
+		} catch (Guzzle\Http\Exception\CurlException $e) {
+			throw new PredictionApiError(__d('predictionIO', 'Unable to connect to the predictionIO server at %s', Configure::read('predictionIO.host')));
+		} catch(Exception $e) {
+			// Mute all other errors
+
+		}
+
+	}
+
+/**
  * @codeCoverageIgnore
  */
 	private function __setInactive($type, $id, $status) {
-		return $this->client->execute(
+		return $this->__execute(
 			call_user_func_array(
 				array($this->client, 'getCommand'),
 				array('create_' . ($type == 'iid' ? 'item' : 'user'), array('pio_' . $type => $id, 'pio_inactive' => $status ? 'true' : 'false'))
