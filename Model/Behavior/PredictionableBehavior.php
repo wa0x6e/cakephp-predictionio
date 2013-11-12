@@ -154,6 +154,10 @@ class PredictionableBehavior extends ModelBehavior {
 		$this->_client->identify($this->_getModelId($userClass, $userId));
 		$response = $this->__execute(call_user_func_array(array($this->_client, 'getCommand'), array('itemrec_get_top_n', $this->__processRetrievalQuery($model, $query))));
 
+		if (empty($response)) {
+			return $response;
+		}
+
 		$return = array_map(function($id) {
 			return array_combine(array('model', 'id'), explode(PredictionableBehavior::$itemIDSeparator, $id));
 		}, $response['piids']);
@@ -207,6 +211,11 @@ class PredictionableBehavior extends ModelBehavior {
 		}
 
 		$recommendations = $this->getRecommendation($model, $query['prediction']);
+
+		if (empty($recommendations)) {
+			return array();
+		}
+
 		$recommendationsConditions = array();
 		foreach ($recommendations as $entry) {
 			$recommendationsConditions[$entry['model']][] = $entry['id'];
@@ -289,7 +298,7 @@ class PredictionableBehavior extends ModelBehavior {
  * Send a command to the PredictionIO server
  *
  * @codeCoverageIgnore
- * @throws PredictionApiError 	If unable to connect to the PredictionIo API server.
+ * @throws PredictionAPIException 	If unable to connect to the PredictionIo API server.
  *         						All other connection error are muted, and a blank response will be returned
  *
  * @return array The server response to the command
@@ -298,10 +307,11 @@ class PredictionableBehavior extends ModelBehavior {
 		try {
 			return $this->_client->execute($command);
 		} catch (Guzzle\Http\Exception\CurlException $e) {
-			throw new PredictionApiError(__d('predictionIO', 'Unable to connect to the predictionIO server at %s', Configure::read('predictionIO.host')));
+			throw new PredictionAPIException(__d('predictionIO', 'Unable to connect to the predictionIO server at %s', Configure::read('predictionIO.host')));
 		} catch(Exception $e) {
 			// Mute all other errors
-
+			// Can't throw an exception here, since no recommendation is raising an exception
+			return array();
 		}
 	}
 
@@ -437,5 +447,9 @@ class InvalidUserException extends CakeException {
 };
 
 class InvalidItemException extends CakeException {
+
+};
+
+class PredictionAPIException extends CakeException {
 
 };

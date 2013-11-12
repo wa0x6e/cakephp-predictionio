@@ -729,6 +729,15 @@ class PredictionableBehaviorTest extends CakeTestCase {
 		$this->assertArrayHasKey('User', $results[1]);
 	}
 
+	public function testFindRecommendedWithNoRecommendation() {
+		$this->User->id = 1;
+
+		$this->PredictionIOClient->expects($this->once())->method('execute')->will($this->returnValue(array()));
+		$results = $this->User->findRecommended('all', array('limit' => 1));
+
+		$this->assertEmpty($results);
+	}
+
 /**
  * @covers PredictionableBehavior::findRecommended
  */
@@ -877,10 +886,22 @@ class PredictionableBehaviorTest extends CakeTestCase {
  * @expectedException InvalidActionOnModelException
  * @expectedExceptionMessage You can not get similar items on the User model
  */
-	public function testfindSimilarThrownAnExceptionWhenCalledOnANonUserModel() {
+	public function testFindSimilarThrownAnExceptionWhenCalledOnANonUserModel() {
 		$this->User->findSimilar('all', array());
 	}
 
+/**
+ * Test that failing to connect to the API throws an exception
+ *
+ * @covers PredictionableBehavior::__execute
+ * @expectedException PredictionAPIException
+ * @expectedExceptionMessage Unable to connect to the predictionIO server at localhost:8000
+ */
+	public function testUnableToConnectToAPI() {
+		$this->User->Behaviors->attach('PredictionIO.Predictionable');
+		$this->User->id = 1;
+		$this->User->getRecommendation();
+	}
 }
 
 class User extends AppModel {
