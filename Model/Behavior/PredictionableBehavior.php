@@ -26,7 +26,7 @@ class PredictionableBehavior extends ModelBehavior {
 
 	public $settings = array();
 
-	public $client = null;
+	protected $_client = null;
 
 	public static $ITEMID_SEPARATOR = ':';
 
@@ -53,7 +53,7 @@ class PredictionableBehavior extends ModelBehavior {
 	}
 
 	public function setupClient(Model $model, $client = null) {
-		$this->client = ($client === null ?
+		$this->_client = ($client === null ?
 			\PredictionIO\PredictionIOClient::factory(array(
 				'appkey' => Configure::read('predictionIO.appkey'),
 				'apiurl' => Configure::read('predictionIO.apiurl'),
@@ -76,7 +76,7 @@ class PredictionableBehavior extends ModelBehavior {
  */
 	public function afterSave(Model $model, $created, $options = array()) {
 		if ($created || $this->_containsCustomFields($model)) {
-			$this->__execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildCreateCommand($model)));
+			$this->__execute(call_user_func_array(array($this->_client, 'getCommand'), $this->__buildCreateCommand($model)));
 		}
 	}
 
@@ -91,7 +91,7 @@ class PredictionableBehavior extends ModelBehavior {
  * @return  void
  */
 	public function afterDelete(Model $model) {
-		$this->__execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildDeleteCommand($model)));
+		$this->__execute(call_user_func_array(array($this->_client, 'getCommand'), $this->__buildDeleteCommand($model)));
 	}
 
 /**
@@ -112,7 +112,7 @@ class PredictionableBehavior extends ModelBehavior {
 			throw new InvalidActionOnModelException(__d('predictionIO', 'You can not record an action on the ' . $model->alias . ' model'));
 		}
 
-		$this->client->identify($this->_getModelId($model));
+		$this->_client->identify($this->_getModelId($model));
 
 		if ($targetItem instanceof Model) {
 			$itemId = $this->_getModelId($targetItem);
@@ -122,7 +122,7 @@ class PredictionableBehavior extends ModelBehavior {
 			throw new InvalidItemException(__d('predictionIO', 'The target item is not valid'));
 		}
 
-		$this->__execute(call_user_func_array(array($this->client, 'getCommand'), $this->__buildRecordActionCommand($model, $actionName, $itemId, $optionalParameters)));
+		$this->__execute(call_user_func_array(array($this->_client, 'getCommand'), $this->__buildRecordActionCommand($model, $actionName, $itemId, $optionalParameters)));
 
 		return true;
 	}
@@ -152,8 +152,8 @@ class PredictionableBehavior extends ModelBehavior {
 			$userId = $this->__isUserModel($model) ? $model->{$model->primaryKey} : $model->$userClass->{$model->primaryKey};
 		}
 
-		$this->client->identify($this->_getModelId($userClass, $userId));
-		$response = $this->__execute(call_user_func_array(array($this->client, 'getCommand'), array('itemrec_get_top_n', $this->__processRetrievalQuery($model, $query))));
+		$this->_client->identify($this->_getModelId($userClass, $userId));
+		$response = $this->__execute(call_user_func_array(array($this->_client, 'getCommand'), array('itemrec_get_top_n', $this->__processRetrievalQuery($model, $query))));
 
 		$return = array_map(function($id) { return array_combine(array('model', 'id'), explode(self::$ITEMID_SEPARATOR, $id)); }, $response['piids']);
 
@@ -194,7 +194,7 @@ class PredictionableBehavior extends ModelBehavior {
 		$query['iid'] = $this->_getModelId($model->alias, $query['id']);
 		unset($query['id']);
 
-		return $this->__execute(call_user_func_array(array($this->client, 'getCommand'), array('itemsin_get_top_n', $this->__processRetrievalQuery($model, $query))));
+		return $this->__execute(call_user_func_array(array($this->_client, 'getCommand'), array('itemsin_get_top_n', $this->__processRetrievalQuery($model, $query))));
 	}
 
 	public function findRecommended(Model $model, $type, $query) {
@@ -290,7 +290,7 @@ class PredictionableBehavior extends ModelBehavior {
  */
 	private function __execute($command) {
 		try {
-			return $this->client->execute($command);
+			return $this->_client->execute($command);
 		} catch (Guzzle\Http\Exception\CurlException $e) {
 			throw new PredictionApiError(__d('predictionIO', 'Unable to connect to the predictionIO server at %s', Configure::read('predictionIO.host')));
 		} catch(Exception $e) {
@@ -306,7 +306,7 @@ class PredictionableBehavior extends ModelBehavior {
 	private function __setInactive($type, $id, $status) {
 		return $this->__execute(
 			call_user_func_array(
-				array($this->client, 'getCommand'),
+				array($this->_client, 'getCommand'),
 				array('create_' . ($type == 'iid' ? 'item' : 'user'), array('pio_' . $type => $id, 'pio_inactive' => $status ? 'true' : 'false'))
 			)
 		);
