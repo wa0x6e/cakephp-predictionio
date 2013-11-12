@@ -902,6 +902,7 @@ class PredictionableBehaviorTest extends CakeTestCase {
 		$this->User->id = 1;
 		$this->User->getRecommendation();
 	}
+
 }
 
 class User extends AppModel {
