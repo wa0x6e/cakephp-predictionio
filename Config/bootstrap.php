@@ -2,6 +2,7 @@
 
 	Configure::write('predictionIO', array(
 		'appkey' => 'your-key',
+		'host' => 'localhost:8000',
 		'userModel' => 'User',
 		'engine' => ''
 	));
