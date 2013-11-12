@@ -26,7 +26,7 @@ App::uses('AppModel', 'Model');
  */
 class PredictionableBehaviorTest extends CakeTestCase {
 
-	public $fixtures = array('User', 'Article');
+	public $fixtures = array('User', 'Article', 'Apple', 'Guild');
 
 	public function setUp() {
 		parent::setUp();
@@ -695,7 +695,6 @@ class PredictionableBehaviorTest extends CakeTestCase {
 		$this->PredictionIOClient->expects($this->once())->method('execute')->will($this->returnValue($expectedRecommendation));
 		$results = $this->User->findRecommended('all', array('limit' => 1));
 
-
 		$this->assertCount(1, $results);
 		$this->assertCount(1, $results[0]);
 		$this->assertArrayHasKey('Article', $results[0]);
@@ -802,7 +801,27 @@ class PredictionableBehaviorTest extends CakeTestCase {
  * @covers PredictionableBehavior::findRecommended
  */
 	public function testFindRecommendedWithMultipleTargetModel() {
+		$expected = array('itemrec_get_top_n', array('pio_n' => 2, 'pio_engine' => 'engine5'));
+		$this->PredictionIOClient->expects($this->once())->method('identify')->with($this->equalTo('User:2'));
+		$this->PredictionIOClient->expects($this->once())->method('getCommand')->with(
+			$this->equalTo($expected[0]),
+			$this->equalTo($expected[1])
+		);
+		$this->PredictionIOClient->expects($this->once())->method('execute')->will($this->returnValue(array('piids' => array('Guild:1', 'Apple:1'))));
+		$results = $this->User->findRecommended('all', array(
+			'prediction' => array('id' => 2, 'engine' => 'engine5'),
+			'limit' => 2,
+			'fields' => array('id', 'name')
+		));
 
+		// Recommendations is returning 1 guild and 1 apple
+		// Only fetch the id and name fields from the database
+
+		$this->assertCount(2, $results);
+		$this->assertCount(1, $results[0]);
+		$this->assertEquals(array('id' => 1, 'name' => 'Warriors'), $results[0]['Guild']);
+		$this->assertCount(1, $results[1]);
+		$this->assertEquals(array('id' => 1, 'name' => 'Red Apple 1'), $results[1]['Apple']);
 	}
 
 /**
