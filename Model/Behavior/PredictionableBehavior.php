@@ -28,7 +28,7 @@ class PredictionableBehavior extends ModelBehavior {
 
 	protected $_client = null;
 
-	public static $ITEMID_SEPARATOR = ':';
+	public static $itemIDSeparator = ':';
 
 	public function setup(Model $model, $config = array()) {
 		$default = array(
@@ -36,7 +36,7 @@ class PredictionableBehavior extends ModelBehavior {
 			'fields' => array(),
 			'engine' => Configure::read('predictionIO.engine'),
 			'count' => 10,
-			'prefix' => $model->alias . self::$ITEMID_SEPARATOR
+			'prefix' => $model->alias . PredictionableBehavior::$itemIDSeparator
 		);
 
 		if (!isset($this->settings[$model->alias])) {
@@ -102,7 +102,6 @@ class PredictionableBehavior extends ModelBehavior {
  * @param  string $actionName name of the performed action
  * @param  Model|array  $targetItem     Target item model, or an array with the item Model name and primary key
  * @throws InvalidActionOnModelException if trying to record an action on a non-user model
- * @throws InvalidUserException if trying to record an action on a non-initialized user
  * @throws InvalidItemException if the target item is invalid
  *
  * @return bool Always true
@@ -155,11 +154,13 @@ class PredictionableBehavior extends ModelBehavior {
 		$this->_client->identify($this->_getModelId($userClass, $userId));
 		$response = $this->__execute(call_user_func_array(array($this->_client, 'getCommand'), array('itemrec_get_top_n', $this->__processRetrievalQuery($model, $query))));
 
-		$return = array_map(function($id) { return array_combine(array('model', 'id'), explode(self::$ITEMID_SEPARATOR, $id)); }, $response['piids']);
+		$return = array_map(function($id) {
+			return array_combine(array('model', 'id'), explode(PredictionableBehavior::$itemIDSeparator, $id));
+		}, $response['piids']);
 
 		if (isset($query['attributes']) && !empty($query['attributes'])) {
 			foreach ($query['attributes'] as $attribute) {
-				for($i = 0, $total = count($return); $i < $total; $i++) {
+				for ($i = 0, $total = count($return); $i < $total; $i++) {
 					$return[$i][$attribute] = $response[$attribute][$i];
 				}
 			}
@@ -218,7 +219,7 @@ class PredictionableBehavior extends ModelBehavior {
 			unset($targetQuery['prediction']);
 			$targetQuery['conditions'][$targetModel->alias . '.id'] = $ids;
 
-			$results = $targetModel->find($type, $targetQuery);
+			$results = array_merge($results, $targetModel->find($type, $targetQuery));
 		}
 		return $results;
 	}
@@ -263,6 +264,8 @@ class PredictionableBehavior extends ModelBehavior {
  * Return a unique model ID
  *
  * @codeCoverageIgnore
+ * @throws InvalidUserException if the user does not have a primary key
+ * @throws InvalidItemException if the item does not have a primary key
  *
  * @param  Model $model The model
  * @return string A unique model ID
@@ -273,9 +276,10 @@ class PredictionableBehavior extends ModelBehavior {
 			$model = $model->alias;
 		}
 
+		$message = __d('preditionIO', 'The %s is not valid', $model);
+
 		if (empty($id)) {
-			$exceptionClassName = $this->__isUserModel($model) ? 'InvalidUserException' : 'InvalidItemException';
-			throw new $exceptionClassName(__d('preditionIO', 'The %s is not valid', $model));
+			throw $this->__isUserModel($model) ? new InvalidUserException($message) : new InvalidItemException($message);
 		}
 
 		return $this->settings[$model]['prefix'] . $id;
@@ -285,6 +289,8 @@ class PredictionableBehavior extends ModelBehavior {
  * Send a command to the PredictionIO server
  *
  * @codeCoverageIgnore
+ * @throws PredictionApiError 	If unable to connect to the PredictionIo API server.
+ *         						All other connection error are muted, and a blank response will be returned
  *
  * @return array The server response to the command
  */
@@ -297,7 +303,6 @@ class PredictionableBehavior extends ModelBehavior {
 			// Mute all other errors
 
 		}
-
 	}
 
 /**
